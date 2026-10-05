@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4f91">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ritten">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Rittenregistratie</title>
+<style>
+:root{
+  --paper:#eef1f4; --card:#ffffff; --ink:#16202b; --muted:#5d6b78; --line:#d6dde4;
+  --sign:#1d4f91; --sign-ink:#ffffff; --sign-soft:#e2eaf5;
+  --odo-bg:#121a23; --odo-ink:#f4f7fa; --danger:#b3261e;
+  --r-lg:16px; --r-sm:10px;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0f151c; --card:#18212b; --ink:#e6ebf0; --muted:#97a4b1; --line:#2a3644;
+    --sign:#5b8fd6; --sign-ink:#0b1420; --sign-soft:#1c2a3c;
+    --odo-bg:#05080c; --odo-ink:#f4f7fa; --danger:#ef7a72;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+  padding-bottom:calc(78px + env(safe-area-inset-bottom,0px));
+}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sign);outline-offset:2px}
+
+/* Header met kilometerteller */
+header{
+  background:var(--sign); color:var(--sign-ink);
+  padding:calc(14px + env(safe-area-inset-top,0px)) 18px 18px;
+}
+header .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+header h1{margin:0;font-size:1.15rem;font-weight:700;letter-spacing:.01em}
+header .month{font-size:.9rem;opacity:.85}
+.odo{display:flex;align-items:flex-end;gap:10px;margin-top:12px}
+.odo .digits{display:flex;gap:3px}
+.odo .d{
+  background:var(--odo-bg);color:var(--odo-ink);
+  min-width:30px;height:44px;border-radius:5px;
+  display:grid;place-items:center;
+  font-size:1.7rem;font-weight:600;font-variant-numeric:tabular-nums;
+  box-shadow:inset 0 -10px 12px rgba(255,255,255,.06),inset 0 10px 12px rgba(0,0,0,.35);
+}
+.odo .d.dec{background:#f4f7fa;color:#121a23}
+.odo .unit{font-size:.95rem;padding-bottom:4px;opacity:.9}
+
+main{padding:16px;max-width:680px;margin:0 auto}
+h2{font-size:1.25rem;margin:4px 0 14px}
+h3{font-size:1rem;margin:0 0 8px}
+.hint{color:var(--muted);font-size:.88rem;margin:6px 0 0}
+
+/* Rittenlijst */
+.monthhead{display:flex;justify-content:space-between;margin:20px 2px 8px;color:var(--muted);font-size:.9rem}
+.monthhead strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.trip{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;
+  width:100%;text-align:left;cursor:pointer;
+}
+.trip .route{font-weight:600;overflow-wrap:anywhere}
+.trip .km{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.trip .meta{color:var(--muted);font-size:.86rem;grid-column:1/-1;display:flex;justify-content:space-between;gap:8px}
+.trip .retour{border:0;background:none;color:var(--sign);font-weight:600;font-size:.86rem;padding:0;cursor:pointer}
+
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--r-lg);padding:20px}
+.empty p{margin:0 0 12px}
+
+/* Formulieren */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+label{display:block;font-size:.88rem;color:var(--muted);margin-bottom:12px}
+input,select{
+  display:block;width:100%;margin-top:4px;padding:11px 12px;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r-sm);
+  font-size:1rem;color:var(--ink);min-height:46px;
+}
+input:focus,select:focus{border-color:var(--sign);outline:none}
+.row{display:flex;gap:10px;align-items:flex-end}
+.row > label{flex:1}
+.row > button{margin-bottom:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.swap{display:block;margin:-4px 0 8px auto;border:0;background:none;color:var(--sign);font-weight:600;cursor:pointer;padding:4px 0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.btn{border:0;border-radius:var(--r-sm);padding:12px 18px;font-weight:600;cursor:pointer;min-height:46px}
+.primary{background:var(--sign);color:var(--sign-ink)}
+.secondary{background:var(--sign-soft);color:var(--sign)}
+.ghost{background:none;color:var(--muted)}
+.danger{background:none;color:var(--danger);border:1px solid currentColor}
+.btn:disabled{opacity:.5}
+
+/* Klanten */
+.place{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:12px 14px;margin-bottom:8px;width:100%;text-align:left;cursor:pointer;display:block
+}
+.place b{display:block}
+.place span{color:var(--muted);font-size:.88rem}
+.homecard{border-left:5px solid var(--sign)}
+
+/* Zoekresultaten */
+.results{list-style:none;margin:0 0 12px;padding:0}
+.results button{
+  width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px;cursor:pointer
+}
+.results button b{display:block}
+.results button span{font-size:.86rem;color:var(--muted)}
+.chosen{background:var(--sign-soft);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:.92rem}
+
+dialog{
+  border:0;border-radius:var(--r-lg);padding:0;width:min(560px,94vw);
+  background:var(--card);color:var(--ink);max-height:90vh;
+}
+dialog::backdrop{background:rgba(10,16,24,.55)}
+.dlg{padding:18px;overflow:auto;max-height:90vh}
+
+/* Navigatie */
+nav{
+  position:fixed;left:0;right:0;bottom:0;
+  background:var(--card);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);
+  padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
+}
+nav button{border:0;background:none;padding:6px 2px;font-size:.78rem;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:24px;height:24px}
+nav button.active{color:var(--sign);font-weight:600}
+nav button.add .plus{
+  width:44px;height:44px;border-radius:50%;background:var(--sign);color:var(--sign-ink);
+  display:grid;place-items:center;margin-top:-18px;box-shadow:0 4px 12px rgba(29,79,145,.35)
+}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:.9rem;
+  max-width:90vw;opacity:0;pointer-events:none;transition:opacity .2s
+}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top"><h1>Rittenregistratie</h1><span class="month" id="hdrMonth"></span></div>
+  <div class="odo" aria-live="polite"><div class="digits" id="odo"></div><span class="unit">km zakelijk</span></div>
+</header>
+
+<main>
+  <!-- RITTEN -->
+  <section id="view-trips" class="view">
+    <div id="tripList"></div>
+  </section>
+
+  <!-- NIEUWE / BEWERK RIT -->
+  <section id="view-new" class="view" hidden>
+    <h2 id="formTitle">Nieuwe rit</h2>
+    <div class="card">
+      <label>Datum<input type="date" id="fDate"></label>
+      <label>Van<select id="fFrom"></select></label>
+      <button type="button" class="swap" id="swapBtn">Wissel van en naar</button>
+      <label>Naar<select id="fTo"></select></label>
+      <div class="row">
+        <label>Afstand in km<input id="fKm" inputmode="decimal" autocomplete="off"></label>
+        <button type="button" class="btn secondary" id="calcBtn">Herbereken</button>
+      </div>
+      <p class="hint" id="kmHint" style="margin-top:-6px;margin-bottom:12px"></p>
+      <div class="two">
+        <label>Beginstand teller<input id="fStart" inputmode="numeric" autocomplete="off"></label>
+        <label>Eindstand teller<input id="fEnd" inputmode="numeric" autocomplete="off"></label>
+      </div>
+      <label>Doel van de rit<input id="fPurpose" placeholder="Bijv. installatie laptops"></label>
+      <label>Afwijkende route (optioneel)<input id="fDetour" placeholder="Bijv. omleiding A2"></label>
+      <div class="actions">
+        <button type="button" class="btn primary" id="saveTrip">Rit opslaan</button>
+        <button type="button" class="btn ghost" id="cancelTrip">Annuleren</button>
+        <button type="button" class="btn danger" id="delTrip" hidden>Rit verwijderen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- KLANTEN -->
+  <section id="view-clients" class="view" hidden>
+    <h2>Adressen</h2>
+    <div id="homeBox"></div>
+    <div class="actions" style="margin:4px 0 14px"><button type="button" class="btn primary" id="addClient">Klant toevoegen</button></div>
+    <div id="clientList"></div>
+  </section>
+
+  <!-- INSTELLINGEN -->
+  <section id="view-settings" class="view" hidden>
+    <h2>Instellingen</h2>
+
+    <div class="card">
+      <h3>Exporteren naar CSV</h3>
+      <label>Periode<select id="expPeriod"></select></label>
+      <div class="actions"><button type="button" class="btn primary" id="expCsv">CSV exporteren</button></div>
+      <p class="hint">Puntkomma-gescheiden, opent direct goed in Nederlandse Excel.</p>
+    </div>
+
+    <div class="card">
+      <h3>Back-up</h3>
+      <p class="hint" style="margin:0 0 12px">Je gegevens staan alleen op dit toestel. Maak regelmatig een back-up, zeker voordat je browsergegevens wist of van telefoon wisselt.</p>
+      <div class="actions">
+        <button type="button" class="btn secondary" id="bkDown">Back-up maken</button>
+        <button type="button" class="btn secondary" id="bkUpBtn">Back-up terugzetten</button>
+        <input type="file" id="bkUp" accept="application/json,.json" hidden>
+      </div>
+      <p class="hint" id="storageInfo"></p>
+    </div>
+
+    <div class="card">
+      <h3>Google-zoeken (optioneel)</h3>
+      <label>Google Maps API-sleutel<input id="gKey" placeholder="AIza…" autocomplete="off" spellcheck="false"></label>
+      <p class="hint" style="margin-top:-6px">Met een sleutel zoekt de app bedrijven via Google Places, wat beter werkt voor bedrijfsnamen. Zonder sleutel zoekt de app gratis via OpenStreetMap. De sleutel blijft op dit toestel.</p>
+      <div class="actions"><button type="button" class="btn secondary" id="gSave">Sleutel opslaan</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Opgeslagen afstanden</h3>
+      <p class="hint" style="margin:0 0 12px" id="cacheInfo"></p>
+      <div class="actions"><button type="button" class="btn ghost" id="clearCache">Opgeslagen afstanden wissen</button></div>
+    </div>
+  </section>
+</main>
+
+<!-- Adres-dialoog -->
+<dialog id="placeDlg">
+  <div class="dlg">
+    <h2 id="pdTitle">Klant toevoegen</h2>
+    <label id="pdNameWrap">Naam<input id="pdName" placeholder="Klantnaam" autocomplete="off"></label>
+    <div class="row">
+      <label>Zoeken op naam, plaats of adres<input id="pdQuery" placeholder="Bijv. Groenen Groep Bladel" autocomplete="off" enterkeyhint="search"></label>
+      <button type="button" class="btn secondary" id="pdSearch">Zoek</button>
+    </div>
+    <ul class="results" id="pdResults"></ul>
+    <div class="chosen" id="pdChosen" hidden></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="pdSave">Opslaan</button>
+      <button type="button" class="btn ghost" id="pdCancel">Annuleren</button>
+      <button type="button" class="btn danger" id="pdDelete" hidden>Verwijderen</button>
+    </div>
+  </div>
+</dialog>
+
+<nav>
+  <button type="button" data-view="trips" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Ritten</button>
+  <button type="button" data-view="new" class="add"><span class="plus">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>Nieuwe rit</button>
+  <button type="button" data-view="clients">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Adressen</button>
+  <button type="button" data-view="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Instellingen</button>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+/* ---------- Opslag ---------- */
+const KEY = 'ritten-v1';
+const $ = s => document.querySelector(s);
+const blank = () => ({ settings:{ googleKey:'' }, places:[], trips:[], dist:{} });
+let S = load();
+
+function load(){
+  try{ const r = localStorage.getItem(KEY); if(r) return Object.assign(blank(), JSON.parse(r)); }catch(e){}
+  return blank();
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ toast('Opslaan mislukt: ' + e.message); }
+}
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+/* ---------- Hulpjes ---------- */
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const home = () => S.places.find(p => p.isHome);
+const placeById = id => S.places.find(p => p.id === id);
+const clients = () => S.places.filter(p => !p.isHome).sort((a,b) => a.name.localeCompare(b.name,'nl'));
+const fmtKm = n => (Math.round(n*10)/10).toLocaleString('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:1});
+const parseKm = v => { const n = parseFloat(String(v).trim().replace(',','.')); return isFinite(n) ? n : NaN; };
+const parseInt10 = v => { const n = parseInt(String(v).replace(/\D/g,''),10); return isFinite(n) ? n : NaN; };
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const monthName = ym => { const [y,m] = ym.split('-'); return new Date(+y, +m-1, 1).toLocaleDateString('nl-NL',{month:'long',year:'numeric'}); };
+const dayLabel = d => new Date(d+'T12:00').toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
+const sortedTrips = () => [...S.trips].sort((a,b) => a.date === b.date ? a.createdAt - b.createdAt : a.date.localeCompare(b.date));
+
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),3200); }
+
+/* ---------- Zoeken (OpenStreetMap of Google) ---------- */
+let lastOsm = 0;
+async function searchPlaces(q){
+  q = q.trim(); if(!q) return [];
+  if(S.settings.googleKey){
+    try{ return await googleSearch(q); }
+    catch(e){ console.warn(e); toast('Google-zoeken lukte niet, zoekt nu via OpenStreetMap'); }
+  }
+  return osmSearch(q);
+}
+async function osmSearch(q){
+  const wait = 1100 - (Date.now() - lastOsm);            // max 1 verzoek per seconde (gebruiksregels Nominatim)
+  if(wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastOsm = Date.now();
+  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=nl,be,de&accept-language=nl&q=' + encodeURIComponent(q);
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Zoeken mislukt (' + r.status + ')');
+  const d = await r.json();
+  return d.map(x => ({ name: x.name || q, address: osmAddr(x), lat: +x.lat, lon: +x.lon }));
+}
+function osmAddr(x){
+  const a = x.address || {};
+  const street = [a.road || a.pedestrian || a.industrial, a.house_number].filter(Boolean).join(' ');
+  const city = a.city || a.town || a.village || a.municipality || '';
+  const line = [street, [a.postcode, city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return line || x.display_name;
+}
+let gReady = null;
+window.gm_authFailure = () => toast('Google-sleutel geweigerd. Controleer de sleutel en de toegestane websites.');
+function loadGoogle(key){
+  if(gReady) return gReady;
+  gReady = new Promise((res, rej) => {
+    window.__gmInit = () => res();
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&v=weekly&loading=async&language=nl&region=NL&callback=__gmInit';
+    s.async = true;
+    s.onerror = () => { gReady = null; rej(new Error('Google Maps laden mislukt')); };
+    document.head.appendChild(s);
+  });
+  return gReady;
+}
+async function googleSearch(q){
+  await loadGoogle(S.settings.googleKey);
+  const { Place } = await google.maps.importLibrary('places');
+  const { places } = await Place.searchByText({
+    textQuery: q, fields: ['displayName','formattedAddress','location'],
+    language: 'nl', region: 'nl', maxResultCount: 6
+  });
+  return places.map(p => ({ name: p.displayName || q, address: p.formattedAddress || '', lat: p.location.lat(), lon: p.location.lng() }));
+}
+
+/* ---------- Afstand (OSRM, met geheugen) ---------- */
+async function distanceKm(a, b, force){
+  if(a.id === b.id) return { km:0, cached:true };
+  const k = a.id + '|' + b.id, rk = b.id + '|' + a.id;
+  if(!force && S.dist[k] != null) return { km:S.dist[k], cached:true };
+  try{
+    const url = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false&alternatives=false`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('Route berekenen mislukt (' + r.status + ')');
+    const d = await r.json();
+    if(d.code !== 'Ok' || !d.routes || !d.routes.length) throw new Error('Geen route gevonden');
+    const km = Math.round(d.routes[0].distance / 100) / 10;
+    S.dist[k] = km; save();
+    return { km, cached:false };
+  }catch(e){
+    if(S.dist[k] != null) return { km:S.dist[k], cached:true };
+    if(S.dist[rk] != null) return { km:S.dist[rk], cached:true, reverse:true };   // offline: gebruik omgekeerde route
+    throw e;
+  }
+}
+function forgetDistances(id){
+  Object.keys(S.dist).forEach(k => { if(k.split('|').includes(id)) delete S.dist[k]; });
+}
+
+/* ---------- Header ---------- */
+function renderHeader(){
+  const ym = today().slice(0,7);
+  const total = S.trips.filter(t => t.date.startsWith(ym)).reduce((s,t) => s + t.km, 0);
+  $('#hdrMonth').textContent = monthName(ym);
+  const [whole, dec] = (Math.round(total*10)/10).toFixed(1).split('.');
+  const w = whole.padStart(4,'0');
+  $('#odo').innerHTML = [...w].map(c => `<span class="d">${c}</span>`).join('') + `<span class="d dec">${dec}</span>`;
+  $('#odo').setAttribute('aria-label', fmtKm(total) + ' kilometer deze maand');
+}
+
+/* ---------- Navigatie ---------- */
+function show(view){
+  document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== 'view-' + view);
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  if(view === 'trips') renderTrips();
+  if(view === 'clients') renderClients();
+  if(view === 'settings') renderSettings();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  if(b.dataset.view === 'new') openTripForm(); else show(b.dataset.view);
+});
+
+/* ---------- Rittenlijst ---------- */
+function renderTrips(){
+  renderHeader();
+  const el = $('#tripList');
+  if(!home()){
+    el.innerHTML = `<div class="empty"><p><b>Begin met je thuisadres.</b> Daarna voeg je klanten toe en kun je ritten registreren.</p>
+      <button type="button" class="btn primary" id="goHome">Thuisadres instellen</button></div>`;
+    $('#goHome').onclick = () => openPlaceDlg(null, true);
+    return;
+  }
+  if(!S.trips.length){
+    el.innerHTML = `<div class="empty"><p><b>Nog geen ritten.</b> ${clients().length ? 'Registreer je eerste rit.' : 'Voeg eerst een klant toe.'}</p>
+      <button type="button" class="btn primary" id="goFirst">${clients().length ? 'Nieuwe rit' : 'Klant toevoegen'}</button></div>`;
+    $('#goFirst').onclick = () => clients().length ? openTripForm() : openPlaceDlg(null,false);
+    return;
+  }
+  const groups = {};
+  sortedTrips().reverse().forEach(t => (groups[t.date.slice(0,7)] ||= []).push(t));
+  el.innerHTML = Object.entries(groups).map(([ym, ts]) => {
+    const sum = ts.reduce((s,t) => s + t.km, 0);
+    return `<div class="monthhead"><span>${esc(monthName(ym))}</span><strong>${fmtKm(sum)} km</strong></div>` +
+      ts.map(t => `<div class="trip" role="button" tabindex="0" data-id="${t.id}">
+        <span class="route">${esc(t.fromName)} naar ${esc(t.toName)}</span>
+        <span class="km">${fmtKm(t.km)} km</span>
+        <span class="meta"><span>${esc(dayLabel(t.date))}${t.purpose ? ', ' + esc(t.purpose) : ''}</span>
+        <button type="button" class="retour" data-retour="${t.id}">Retour</button></span>
+      </div>`).join('');
+  }).join('');
+  el.querySelectorAll('.trip').forEach(n => {
+    const open = e => { if(e.target.closest('[data-retour]')) return; openTripForm(S.trips.find(t => t.id === n.dataset.id)); };
+    n.onclick = open;
+    n.onkeydown = e => { if(e.key === 'Enter') open(e); };
+  });
+  el.querySelectorAll('[data-retour]').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const t = S.trips.find(x => x.id === b.dataset.retour);
+    openTripForm(null, { fromId:t.toId, toId:t.fromId, date:t.date, purpose:t.purpose });
+  });
+}
+
+/* ---------- Ritformulier ---------- */
+let editing = null, kmAuto = true;
+const F = { date:$('#fDate'), from:$('#fFrom'), to:$('#fTo'), km:$('#fKm'), start:$('#fStart'), end:$('#fEnd'), purpose:$('#fPurpose'), detour:$('#fDetour') };
+
+function placeOptions(sel, selectedId, orig){
+  const h = home();
+  let html = '<option value="">Kies een adres</option>';
+  if(h) html += `<option value="${h.id}">Thuis</option>`;
+  clients().forEach(p => html += `<option value="${p.id}">${esc(p.name)}</option>`);
+  if(orig) html += `<option value="__orig">${esc(orig)} (verwijderd adres)</option>`;
+  sel.innerHTML = html;
+  sel.value = selectedId || '';
+}
+
+function openTripForm(trip, preset){
+  if(!home()){ toast('Stel eerst je thuisadres in'); show('clients'); return; }
+  editing = trip || null;
+  $('#formTitle').textContent = trip ? 'Rit bewerken' : 'Nieuwe rit';
+  $('#delTrip').hidden = !trip;
+  const all = sortedTrips();
+  const last = all[all.length-1];
+  let fromId, toId = '';
+  if(trip){ fromId = placeById(trip.fromId) ? trip.fromId : '__orig'; toId = placeById(trip.toId) ? trip.toId : '__orig'; }
+  else if(preset){ fromId = preset.fromId; toId = preset.toId; }
+  else fromId = (last && last.date === today() && placeById(last.toId)) ? last.toId : home().id;
+
+  placeOptions(F.from, fromId, trip && !placeById(trip.fromId) ? trip.fromName : null);
+  placeOptions(F.to, toId, trip && !placeById(trip.toId) ? trip.toName : null);
+  F.date.value = trip ? trip.date : (preset && preset.date) || today();
+  F.km.value = trip ? fmtKm(trip.km) : '';
+  F.purpose.value = trip ? trip.purpose : (preset && preset.purpose) || '';
+  F.detour.value = trip ? trip.detour || '' : '';
+  const lastEnd = last && last.endOdo != null ? last.endOdo : '';
+  F.start.value = trip ? (trip.startOdo ?? '') : lastEnd;
+  F.end.value = trip ? (trip.endOdo ?? '') : '';
+  kmAuto = !trip;
+  $('#kmHint').textContent = '';
+  show('new');
+  if(!trip && F.from.value && F.to.value) autoCalc();
+}
+
+function syncOdo(src){
+  const start = parseInt10(F.start.value), km = parseKm(F.km.value), end = parseInt10(F.end.value);
+  if((src === 'km' || src === 'start') && !isNaN(start) && !isNaN(km)) F.end.value = Math.round(start + km);
+  if(src === 'end' && !isNaN(start) && !isNaN(end) && end >= start){ F.km.value = fmtKm(end - start); kmAuto = false; $('#kmHint').textContent = 'Afstand berekend uit tellerstanden'; }
+}
+
+async function autoCalc(force){
+  const a = placeById(F.from.value), b = placeById(F.to.value);
+  if(!a || !b) return;
+  if(a.id === b.id){ $('#kmHint').textContent = 'Van en naar zijn hetzelfde adres'; return; }
+  $('#kmHint').textContent = 'Afstand berekenen…';
+  try{
+    const res = await distanceKm(a, b, force);
+    if(F.from.value !== a.id || F.to.value !== b.id) return;   // gebruiker heeft intussen iets anders gekozen
+    F.km.value = fmtKm(res.km); kmAuto = true;
+    $('#kmHint').textContent = res.reverse ? 'Offline: afstand van de omgekeerde route gebruikt'
+      : res.cached ? 'Snelste route, eerder berekend' : 'Snelste route berekend';
+    syncOdo('km');
+  }catch(e){
+    $('#kmHint').textContent = e.message + '. Vul de afstand zelf in.';
+  }
+}
+
+F.from.onchange = F.to.onchange = () => { if(kmAuto || !F.km.value) autoCalc(); };
+F.km.oninput = () => { kmAuto = false; $('#kmHint').textContent = 'Handmatig ingevuld'; syncOdo('km'); };
+F.start.oninput = () => syncOdo('start');
+F.end.oninput = () => syncOdo('end');
+$('#calcBtn').onclick = () => autoCalc(true);
+$('#swapBtn').onclick = () => { const f = F.from.value; F.from.value = F.to.value; F.to.value = f; autoCalc(); };
+$('#cancelTrip').onclick = () => show('trips');
+
+$('#saveTrip').onclick = () => {
+  const km = parseKm(F.km.value);
+  if(!F.date.value) return toast('Kies een datum');
+  if(!F.from.value || !F.to.value) return toast('Kies van en naar');
+  if(F.from.value === F.to.value) return toast('Van en naar zijn hetzelfde adres');
+  if(isNaN(km) || km <= 0) return toast('Vul een geldige afstand in');
+  const side = (val, which) => {
+    if(val === '__orig') return { id: editing[which+'Id'], name: editing[which+'Name'], addr: editing[which+'Addr'] };
+    const p = placeById(val); return { id:p.id, name:p.isHome ? 'Thuis' : p.name, addr:p.address };
+  };
+  const f = side(F.from.value, 'from'), t = side(F.to.value, 'to');
+  const start = parseInt10(F.start.value), end = parseInt10(F.end.value);
+  const trip = {
+    id: editing ? editing.id : uid(),
+    createdAt: editing ? editing.createdAt : Date.now(),
+    date: F.date.value,
+    fromId:f.id, fromName:f.name, fromAddr:f.addr,
+    toId:t.id, toName:t.name, toAddr:t.addr,
+    km: Math.round(km*10)/10,
+    startOdo: isNaN(start) ? null : start,
+    endOdo: isNaN(end) ? null : end,
+    purpose: F.purpose.value.trim(),
+    detour: F.detour.value.trim()
+  };
+  if(editing) S.trips = S.trips.map(x => x.id === trip.id ? trip : x); else S.trips.push(trip);
+  save(); toast(editing ? 'Rit bijgewerkt' : 'Rit opgeslagen'); show('trips');
+};
+$('#delTrip').onclick = () => {
+  if(!editing || !confirm('Deze rit verwijderen?')) return;
+  S.trips = S.trips.filter(t => t.id !== editing.id); save(); toast('Rit verwijderd'); show('trips');
+};
+
+/* ---------- Adressen ---------- */
+function renderClients(){
+  const h = home();
+  $('#homeBox').innerHTML = `<button type="button" class="place homecard" id="homeBtn"><b>Thuis</b>
+    <span>${h ? esc(h.address) : 'Nog niet ingesteld, tik om in te stellen'}</span></button>`;
+  $('#homeBtn').onclick = () => openPlaceDlg(h || null, true);
+  const list = clients();
+  $('#clientList').innerHTML = list.length
+    ? list.map(p => `<button type="button" class="place" data-id="${p.id}"><b>${esc(p.name)}</b><span>${esc(p.address)}</span></button>`).join('')
+    : '<p class="hint">Nog geen klanten.</p>';
+  $('#clientList').querySelectorAll('[data-id]').forEach(b => b.onclick = () => openPlaceDlg(placeById(b.dataset.id), false));
+}
+$('#addClient').onclick = () => openPlaceDlg(null, false);
+
+let pd = { place:null, isHome:false, chosen:null };
+const dlg = $('#placeDlg');
+function openPlaceDlg(place, isHome){
+  pd = { place, isHome, chosen: place ? { address:place.address, lat:place.lat, lon:place.lon } : null };
+  $('#pdTitle').textContent = isHome ? 'Thuisadres' : place ? 'Klant bewerken' : 'Klant toevoegen';
+  $('#pdNameWrap').hidden = isHome;
+  $('#pdName').value = place && !isHome ? place.name : '';
+  $('#pdQuery').value = isHome && place ? place.address : '';
+  $('#pdQuery').placeholder = isHome ? 'Straat, huisnummer en plaats' : 'Bijv. bedrijfsnaam en plaats';
+  $('#pdResults').innerHTML = '';
+  $('#pdDelete').hidden = !place || isHome;
+  renderChosen();
+  dlg.showModal();
+  setTimeout(() => (isHome ? $('#pdQuery') : $('#pdName')).focus(), 50);
+}
+function renderChosen(){
+  const c = pd.chosen, el = $('#pdChosen');
+  el.hidden = !c;
+  if(c) el.innerHTML = `<b>Gekozen adres</b><br>${esc(c.address)}`;
+}
+$('#pdName').oninput = () => { if(!pd.place) $('#pdQuery').value = $('#pdName').value; };
+$('#pdQuery').onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); doSearch(); } };
+$('#pdSearch').onclick = doSearch;
+async function doSearch(){
+  const q = $('#pdQuery').value, ul = $('#pdResults'), btn = $('#pdSearch');
+  if(!q.trim()) return toast('Vul een zoekterm in');
+  btn.disabled = true; ul.innerHTML = '<li class="hint">Zoeken…</li>';
+  try{
+    const res = await searchPlaces(q);
+    if(!res.length){ ul.innerHTML = '<li class="hint">Niets gevonden. Probeer straat en plaats, of naam met plaats.</li>'; return; }
+    ul.innerHTML = res.map((r,i) => `<li><button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${esc(r.address)}</span></button></li>`).join('');
+    ul.querySelectorAll('button').forEach(b => b.onclick = () => {
+      const r = res[+b.dataset.i];
+      pd.chosen = { address:r.address, lat:r.lat, lon:r.lon };
+      if(!pd.isHome && !$('#pdName').value.trim()) $('#pdName').value = r.name;
+      ul.innerHTML = ''; renderChosen();
+    });
+  }catch(e){ ul.innerHTML = `<li class="hint">${esc(e.message)}. Controleer je verbinding.</li>`; }
+  finally{ btn.disabled = false; }
+}
+$('#pdCancel').onclick = () => dlg.close();
+$('#pdSave').onclick = () => {
+  const name = pd.isHome ? 'Thuis' : $('#pdName').value.trim();
+  if(!name) return toast('Vul een naam in');
+  if(!pd.chosen) return toast('Zoek en kies eerst een adres');
+  const moved = pd.place && (pd.place.lat !== pd.chosen.lat || pd.place.lon !== pd.chosen.lon);
+  if(pd.place){
+    Object.assign(pd.place, { name, ...pd.chosen });
+    if(moved) forgetDistances(pd.place.id);
+  }else{
+    S.places.push({ id: pd.isHome ? 'home' : uid(), name, isHome: pd.isHome, ...pd.chosen });
+  }
+  save(); dlg.close(); toast(pd.isHome ? 'Thuisadres opgeslagen' : 'Klant opgeslagen');
+  renderClients(); renderHeader();
+};
+$('#pdDelete').onclick = () => {
+  if(!pd.place || !confirm(`${pd.place.name} verwijderen? Bestaande ritten blijven bewaard.`)) return;
+  forgetDistances(pd.place.id);
+  S.places = S.places.filter(p => p.id !== pd.place.id);
+  save(); dlg.close(); toast('Klant verwijderd'); renderClients();
+};
+
+/* ---------- Instellingen, export, back-up ---------- */
+function renderSettings(){
+  const months = [...new Set(S.trips.map(t => t.date.slice(0,7)))].sort().reverse();
+  const years = [...new Set(months.map(m => m.slice(0,4)))];
+  $('#expPeriod').innerHTML =
+    months.map(m => `<option value="m:${m}">${esc(monthName(m))}</option>`).join('') +
+    years.map(y => `<option value="y:${y}">Heel ${y}</option>`).join('') +
+    '<option value="all">Alle ritten</option>';
+  $('#gKey').value = S.settings.googleKey || '';
+  $('#cacheInfo').textContent = Object.keys(S.dist).length + ' trajecten opgeslagen. Die worden niet opnieuw opgevraagd.';
+  $('#storageInfo').textContent = '';
+  if(navigator.storage && navigator.storage.persisted){
+    navigator.storage.persisted().then(p => $('#storageInfo').textContent = p
+      ? 'Opslag is beschermd tegen automatisch opruimen door de browser.'
+      : 'Let op: de browser kan deze gegevens opruimen bij weinig ruimte. Zet de app op je beginscherm en maak back-ups.');
+  }
+}
+
+async function deliver(name, text, type){
+  const file = new File([text], name, { type });
+  if(navigator.canShare && navigator.canShare({ files:[file] }) && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+    try{ await navigator.share({ files:[file], title:name }); return; }
+    catch(e){ if(e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+$('#expCsv').onclick = () => {
+  const p = $('#expPeriod').value;
+  let ts = sortedTrips(), label = 'alle';
+  if(p.startsWith('m:')){ label = p.slice(2); ts = ts.filter(t => t.date.startsWith(label)); }
+  if(p.startsWith('y:')){ label = p.slice(2); ts = ts.filter(t => t.date.startsWith(label)); }
+  if(!ts.length) return toast('Geen ritten in deze periode');
+  const q = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  const n = v => v == null ? '' : String(v).replace('.', ',');
+  const rows = [['Datum','Vertrek','Vertrekadres','Bestemming','Bestemmingsadres','Doel','Kilometers','Beginstand','Eindstand','Afwijkende route']];
+  ts.forEach(t => rows.push([t.date.split('-').reverse().join('-'), t.fromName, t.fromAddr, t.toName, t.toAddr, t.purpose, n(t.km), n(t.startOdo), n(t.endOdo), t.detour]));
+  const total = Math.round(ts.reduce((s,t) => s + t.km, 0)*10)/10;
+  rows.push(['Totaal','','','','','', n(total), '', '', '']);
+  const csv = '\uFEFF' + rows.map((r,i) => r.map((c,j) => (i > 0 && [6,7,8].includes(j)) ? c : q(c)).join(';')).join('\r\n');
+  deliver(`ritten-${label}.csv`, csv, 'text/csv');
+};
+
+$('#bkDown').onclick = () => deliver(`ritten-backup-${today()}.json`, JSON.stringify(S, null, 2), 'application/json');
+$('#bkUpBtn').onclick = () => $('#bkUp').click();
+$('#bkUp').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if(!f) return;
+  try{
+    const d = JSON.parse(await f.text());
+    if(!Array.isArray(d.trips) || !Array.isArray(d.places)) throw new Error('Dit is geen back-up van deze app');
+    if(!confirm(`Back-up met ${d.trips.length} ritten en ${d.places.length} adressen terugzetten? Huidige gegevens worden vervangen.`)) return;
+    S = Object.assign(blank(), d); save(); toast('Back-up teruggezet'); show('trips');
+  }catch(err){ toast('Terugzetten mislukt: ' + err.message); }
+};
+
+$('#gSave').onclick = () => {
+  S.settings.googleKey = $('#gKey').value.trim(); gReady = null; save();
+  toast(S.settings.googleKey ? 'Sleutel opgeslagen, zoeken gaat via Google' : 'Sleutel verwijderd, zoeken gaat via OpenStreetMap');
+};
+$('#clearCache').onclick = () => {
+  if(!confirm('Alle opgeslagen afstanden wissen? Ze worden opnieuw berekend wanneer nodig.')) return;
+  S.dist = {}; save(); renderSettings(); toast('Opgeslagen afstanden gewist');
+};
+
+/* ---------- Start ---------- */
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+show('trips');
+</script>
+</body>
+</html>
