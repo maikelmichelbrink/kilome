@@ -1,5 +1,5 @@
 // Verhoog dit nummer bij elke update van de app
-const CACHE = 'ritten-v4';
+const CACHE = 'ritten-v5';
 const FONTS = 'ritten-fonts';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 

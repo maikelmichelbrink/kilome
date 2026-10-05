@@ -212,8 +212,8 @@ nav button.add .plus{
       </div>
       <p class="hint" id="kmHint" style="margin-top:-6px;margin-bottom:12px"></p>
       <div class="two">
-        <label>Beginstand teller<input id="fStart" inputmode="numeric" autocomplete="off"></label>
-        <label>Eindstand teller<input id="fEnd" inputmode="numeric" autocomplete="off"></label>
+        <label>Beginstand teller<input id="fStart" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
+        <label>Eindstand teller<input id="fEnd" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
       </div>
       <label>Doel van de rit<input id="fPurpose" placeholder="Bijv. installatie laptops"></label>
       <label style="margin-bottom:0">Afwijkende route (optioneel)<input id="fDetour" placeholder="Bijv. omleiding A2"></label>
@@ -321,9 +321,15 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const home = () => S.places.find(p => p.isHome);
 const placeById = id => S.places.find(p => p.id === id);
 const clients = () => S.places.filter(p => !p.isHome).sort((a,b) => a.name.localeCompare(b.name,'nl'));
-const fmtKm = n => (Math.round(n*10)/10).toLocaleString('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:1});
+const r2 = n => Math.round(n*100)/100;
+const fmtKm = n => r2(n).toLocaleString('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:2});
+const fmtOdo = n => r2(n).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:false});
 const parseKm = v => { const n = parseFloat(String(v).trim().replace(',','.')); return isFinite(n) ? n : NaN; };
-const parseInt10 = v => { const n = parseInt(String(v).replace(/\D/g,''),10); return isFinite(n) ? n : NaN; };
+const parseOdo = v => {   // accepteert 45123,45 en 45.123,45 en 45123.45
+  let t = String(v).trim().replace(/\s/g,'');
+  if(t.includes(',')) t = t.replace(/\./g,'').replace(',','.');
+  const n = parseFloat(t); return isFinite(n) ? r2(n) : NaN;
+};
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 const monthName = ym => { const [y,m] = ym.split('-'); return new Date(+y, +m-1, 1).toLocaleDateString('nl-NL',{month:'long',year:'numeric'}); };
 const dayLabel = d => new Date(d+'T12:00').toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
@@ -549,9 +555,9 @@ function openTripForm(trip, preset){
   F.km.value = trip ? fmtKm(trip.km) : '';
   F.purpose.value = trip ? trip.purpose : (preset && preset.purpose) || '';
   F.detour.value = trip ? trip.detour || '' : '';
-  const lastEnd = last && last.endOdo != null ? last.endOdo : '';
-  F.start.value = trip ? (trip.startOdo ?? '') : lastEnd;
-  F.end.value = trip ? (trip.endOdo ?? '') : '';
+  const odo = v => v == null ? '' : fmtOdo(v);
+  F.start.value = trip ? odo(trip.startOdo) : odo(last && last.endOdo);
+  F.end.value = trip ? odo(trip.endOdo) : '';
   kmAuto = !trip;
   $('#kmHint').textContent = '';
   show('new');
@@ -559,8 +565,8 @@ function openTripForm(trip, preset){
 }
 
 function syncOdo(src){
-  const start = parseInt10(F.start.value), km = parseKm(F.km.value), end = parseInt10(F.end.value);
-  if((src === 'km' || src === 'start') && !isNaN(start) && !isNaN(km)) F.end.value = Math.round(start + km);
+  const start = parseOdo(F.start.value), km = parseKm(F.km.value), end = parseOdo(F.end.value);
+  if((src === 'km' || src === 'start') && !isNaN(start) && !isNaN(km)) F.end.value = fmtOdo(start + km);
   if(src === 'end' && !isNaN(start) && !isNaN(end) && end >= start){ F.km.value = fmtKm(end - start); kmAuto = false; $('#kmHint').textContent = 'Afstand berekend uit tellerstanden'; }
 }
 
@@ -585,6 +591,7 @@ F.from.onchange = F.to.onchange = () => { if(kmAuto || !F.km.value) autoCalc(); 
 F.km.oninput = () => { kmAuto = false; $('#kmHint').textContent = 'Handmatig ingevuld'; syncOdo('km'); };
 F.start.oninput = () => syncOdo('start');
 F.end.oninput = () => syncOdo('end');
+[F.start, F.end].forEach(inp => inp.addEventListener('blur', () => { const v = parseOdo(inp.value); if(!isNaN(v)) inp.value = fmtOdo(v); }));
 $('#calcBtn').onclick = () => autoCalc(true);
 $('#swapBtn').onclick = () => { const f = F.from.value; F.from.value = F.to.value; F.to.value = f; autoCalc(); };
 $('#cancelTrip').onclick = () => show('trips');
@@ -600,14 +607,15 @@ $('#saveTrip').onclick = () => {
     const p = placeById(val); return { id:p.id, name:p.isHome ? 'Thuis' : p.name, addr:p.address };
   };
   const f = side(F.from.value, 'from'), t = side(F.to.value, 'to');
-  const start = parseInt10(F.start.value), end = parseInt10(F.end.value);
+  const start = parseOdo(F.start.value), end = parseOdo(F.end.value);
+  if(!isNaN(start) && !isNaN(end) && end < start) return toast('Eindstand is lager dan beginstand');
   const trip = {
     id: editing ? editing.id : uid(),
     createdAt: editing ? editing.createdAt : Date.now(),
     date: F.date.value,
     fromId:f.id, fromName:f.name, fromAddr:f.addr,
     toId:t.id, toName:t.name, toAddr:t.addr,
-    km: Math.round(km*10)/10,
+    km: r2(km),
     startOdo: isNaN(start) ? null : start,
     endOdo: isNaN(end) ? null : end,
     purpose: F.purpose.value.trim(),
@@ -735,8 +743,9 @@ $('#expCsv').onclick = () => {
   if(!ts.length) return toast('Geen ritten in deze periode');
   const q = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
   const n = v => v == null ? '' : String(v).replace('.', ',');
+  const o = v => v == null ? '' : r2(v).toFixed(2).replace('.', ',');
   const rows = [['Datum','Vertrek','Vertrekadres','Bestemming','Bestemmingsadres','Doel','Kilometers','Beginstand','Eindstand','Afwijkende route']];
-  ts.forEach(t => rows.push([t.date.split('-').reverse().join('-'), t.fromName, t.fromAddr, t.toName, t.toAddr, t.purpose, n(t.km), n(t.startOdo), n(t.endOdo), t.detour]));
+  ts.forEach(t => rows.push([t.date.split('-').reverse().join('-'), t.fromName, t.fromAddr, t.toName, t.toAddr, t.purpose, n(t.km), o(t.startOdo), o(t.endOdo), t.detour]));
   const total = Math.round(ts.reduce((s,t) => s + t.km, 0)*10)/10;
   rows.push(['Totaal','','','','','', n(total), '', '', '']);
   const csv = '\uFEFF' + rows.map((r,i) => r.map((c,j) => (i > 0 && [6,7,8].includes(j)) ? c : q(c)).join(';')).join('\r\n');
